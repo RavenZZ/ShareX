@@ -50,7 +50,7 @@ namespace ShareX
             pbSteam.Visible = false;
             lblSteamBuild.Visible = false;
 
-            if (!Program.IsPortableApps)
+            if (!Program.PortableApps)
             {
                 uclUpdate.CheckUpdate(TaskHelpers.CheckUpdate);
             }
@@ -76,7 +76,6 @@ Resources.AboutForm_AboutForm_Changelog, Links.URL_CHANGELOG);
 https://github.com/ShareX/ShareX/graphs/contributors
 
 Mega, Gist and Jira support: https://github.com/gpailler
-Web site: https://github.com/dmxt
 Amazon S3 and DreamObjects support: https://github.com/alanedwardes
 Gfycat support: https://github.com/Dinnerbone
 AdFly support: https://github.com/LRNAB
@@ -123,8 +122,7 @@ System.Net.FtpClient: https://netftp.codeplex.com
 AWS SDK: http://aws.amazon.com/sdk-for-net/
 CLR Security: http://clrsecurity.codeplex.com
 Steamworks.NET: https://github.com/rlabrecque/Steamworks.NET
-
-Trailer music credits: Track Name: Au5 - Inside (feat. Danyka Nadeau), Video Link: https://youtu.be/WrkyT-6ivjc, Buy Link: http://music.monstercat.com/track/inside-feat-danyka-nadeau, Label Channel: http://www.YouTube.com/Monstercat
+OCR Space: http://ocr.space
 
 Copyright (c) 2007-2016 ShareX Team", Resources.AboutForm_AboutForm_Contributors, Resources.AboutForm_AboutForm_Translators, Resources.AboutForm_AboutForm_External_libraries);
         }

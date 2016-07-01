@@ -318,7 +318,7 @@ namespace ShareX
 
         #region Capture / Region capture
 
-        public SurfaceOptions SurfaceOptions = new SurfaceOptions();
+        public RegionCaptureOptions SurfaceOptions = new RegionCaptureOptions();
 
         #endregion Capture / Region capture
 
@@ -343,6 +343,12 @@ namespace ShareX
         public ScrollingCaptureOptions ScrollingCaptureOptions = new ScrollingCaptureOptions();
 
         #endregion Capture / Scrolling capture
+
+        #region Capture / Rectangle annotate
+
+        public RectangleAnnotateOptions RectangleAnnotateOptions = new RectangleAnnotateOptions();
+
+        #endregion Capture / Rectangle annotate
     }
 
     public class TaskSettingsUpload

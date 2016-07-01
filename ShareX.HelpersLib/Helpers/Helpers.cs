@@ -417,7 +417,7 @@ namespace ShareX.HelpersLib
             {
                 try
                 {
-                    Process.Start("explorer.exe", folderPath);
+                    Process.Start(folderPath);
                     return true;
                 }
                 catch (Exception e)
@@ -439,7 +439,7 @@ namespace ShareX.HelpersLib
             {
                 try
                 {
-                    Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+                    NativeMethods.OpenFolderAndSelectFile(filePath);
                     return true;
                 }
                 catch (Exception e)
@@ -1096,6 +1096,29 @@ namespace ShareX.HelpersLib
                             select Activator.CreateInstance(t) as T;
 
             return instances.ToArray();
+        }
+
+        public static string GetWindowsProductName()
+        {
+            try
+            {
+                RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+
+                if (rk != null)
+                {
+                    string productName = rk.GetValue("ProductName") as string;
+
+                    if (!string.IsNullOrEmpty(productName))
+                    {
+                        return productName;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return Environment.OSVersion.VersionString;
         }
     }
 }

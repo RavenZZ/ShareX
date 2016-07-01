@@ -27,6 +27,7 @@ using ShareX.HelpersLib;
 using ShareX.Properties;
 using ShareX.UploadersLib;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -53,8 +54,6 @@ namespace ShareX
             }
         }
 
-        public static bool IsBeta { get; } = true;
-
         public static string Title
         {
             get
@@ -62,8 +61,9 @@ namespace ShareX
                 Version version = Version.Parse(Application.ProductVersion);
                 string title = string.Format("ShareX {0}.{1}", version.Major, version.Minor);
                 if (version.Build > 0) title += "." + version.Build;
-                if (IsPortable) title += " Portable";
-                if (IsBeta) title += " Beta";
+                if (version.Revision > 0) title += "." + version.Revision;
+                if (Portable) title += " Portable";
+                if (Beta) title += " Beta";
                 return title;
             }
         }
@@ -72,18 +72,19 @@ namespace ShareX
         {
             get
             {
-                return $"{Title} {Build}";
+                return $"{Title} ({Build})";
             }
         }
 
-        public static CLIManager CLI { get; private set; }
-        public static bool IsMultiInstance { get; private set; }
-        public static bool IsPortable { get; private set; }
-        public static bool IsPortableApps { get; private set; }
-        public static bool IsSilentRun { get; private set; }
-        public static bool IsSandbox { get; private set; }
-        public static bool IsFirstTimeConfig { get; private set; }
-        public static bool NoHotkeys { get; private set; }
+        public static bool Beta { get; } = true;
+        public static bool MultiInstance { get; private set; }
+        public static bool Portable { get; private set; }
+        public static bool PortableApps { get; private set; }
+        public static bool SilentRun { get; private set; }
+        public static bool Sandbox { get; private set; }
+        public static bool SteamFirstTimeConfig { get; private set; }
+        public static bool IgnoreHotkeyWarning { get; private set; }
+        public static bool PuushMode { get; private set; }
 
         public static ApplicationConfig Settings { get; private set; }
         public static TaskSettings DefaultTaskSettings { get; private set; }
@@ -97,6 +98,7 @@ namespace ShareX
         public static Stopwatch StartTimer { get; private set; }
         public static HotkeyManager HotkeyManager { get; set; }
         public static WatchFolderManager WatchFolderManager { get; set; }
+        public static CLIManager CLI { get; private set; }
 
         private static bool restarting;
         private static FileSystemWatcher uploaderConfigWatcher;
@@ -117,7 +119,7 @@ namespace ShareX
             {
                 string oldPath = Helpers.GetAbsolutePath(PersonalPathConfigFileName);
 
-                if (IsPortable || File.Exists(oldPath))
+                if (Portable || File.Exists(oldPath))
                 {
                     return oldPath;
                 }
@@ -150,7 +152,7 @@ namespace ShareX
         {
             get
             {
-                if (!IsSandbox)
+                if (!Sandbox)
                 {
                     return Path.Combine(PersonalFolder, "ApplicationConfig.json");
                 }
@@ -163,7 +165,7 @@ namespace ShareX
         {
             get
             {
-                if (!IsSandbox)
+                if (!Sandbox)
                 {
                     string uploadersConfigFolder;
 
@@ -187,7 +189,7 @@ namespace ShareX
         {
             get
             {
-                if (!IsSandbox)
+                if (!Sandbox)
                 {
                     string hotkeysConfigFolder;
 
@@ -211,7 +213,7 @@ namespace ShareX
         {
             get
             {
-                if (!IsSandbox)
+                if (!Sandbox)
                 {
                     return Path.Combine(PersonalFolder, "History.xml");
                 }
@@ -283,9 +285,9 @@ namespace ShareX
 
             DebugHelper.Init(LogsFilePath);
 
-            IsMultiInstance = CLI.IsCommandExist("multi", "m");
+            MultiInstance = CLI.IsCommandExist("multi", "m");
 
-            using (ApplicationInstanceManager instanceManager = new ApplicationInstanceManager(!IsMultiInstance, args, SingleInstanceCallback))
+            using (ApplicationInstanceManager instanceManager = new ApplicationInstanceManager(!MultiInstance, args, SingleInstanceCallback))
             {
                 Run();
             }
@@ -301,18 +303,23 @@ namespace ShareX
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            IsSilentRun = CLI.IsCommandExist("silent", "s");
-
-#if STEAM
-            IsFirstTimeConfig = CLI.IsCommandExist("SteamConfig");
-#endif
-
-            NoHotkeys = CLI.IsCommandExist("NoHotkeys");
-
-            DebugHelper.WriteLine(TitleLong);
-            DebugHelper.WriteLine("Operating system: " + Environment.OSVersion.VersionString);
+            DebugHelper.WriteLine(Title);
+            DebugHelper.WriteLine("Build: " + Build);
             DebugHelper.WriteLine("Command line: " + Environment.CommandLine);
             DebugHelper.WriteLine("Personal path: " + PersonalFolder);
+            DebugHelper.WriteLine("Operating system: " + Helpers.GetWindowsProductName());
+
+            SilentRun = CLI.IsCommandExist("silent", "s");
+
+#if STEAM
+            SteamFirstTimeConfig = CLI.IsCommandExist("SteamConfig");
+#endif
+
+            IgnoreHotkeyWarning = CLI.IsCommandExist("NoHotkeys");
+
+            CheckPuushMode();
+
+            DebugWriteFlags();
 
             LoadProgramSettings();
 
@@ -444,20 +451,20 @@ namespace ShareX
 
         private static void UpdatePersonalPath()
         {
-            IsSandbox = CLI.IsCommandExist("sandbox");
+            Sandbox = CLI.IsCommandExist("sandbox");
 
-            if (!IsSandbox)
+            if (!Sandbox)
             {
-                IsPortable = CLI.IsCommandExist("portable", "p");
+                Portable = CLI.IsCommandExist("portable", "p");
 
-                if (IsPortable)
+                if (Portable)
                 {
                     CustomPersonalPath = PortablePersonalFolder;
                 }
                 else
                 {
-                    IsPortableApps = File.Exists(PortableAppsCheckFilePath);
-                    IsPortable = IsPortableApps || File.Exists(PortableCheckFilePath);
+                    PortableApps = File.Exists(PortableAppsCheckFilePath);
+                    Portable = PortableApps || File.Exists(PortableCheckFilePath);
                     CheckPersonalPathConfig();
                 }
 
@@ -486,11 +493,11 @@ namespace ShareX
                 customPersonalPath = Helpers.ExpandFolderVariables(customPersonalPath);
                 CustomPersonalPath = Helpers.GetAbsolutePath(customPersonalPath);
             }
-            else if (IsPortableApps)
+            else if (PortableApps)
             {
                 CustomPersonalPath = PortableAppsPersonalFolder;
             }
-            else if (IsPortable)
+            else if (Portable)
             {
                 CustomPersonalPath = PortablePersonalFolder;
             }
@@ -634,6 +641,35 @@ namespace ShareX
             }
 
             return false;
+        }
+
+        private static bool CheckPuushMode()
+        {
+            string puushPath = Helpers.GetAbsolutePath("puush");
+            PuushMode = File.Exists(puushPath);
+            return PuushMode;
+        }
+
+        private static void DebugWriteFlags()
+        {
+            List<string> flags = new List<string>();
+
+            if (Beta) flags.Add(nameof(Beta));
+            if (MultiInstance) flags.Add(nameof(MultiInstance));
+            if (Portable) flags.Add(nameof(Portable));
+            if (PortableApps) flags.Add(nameof(PortableApps));
+            if (SilentRun) flags.Add(nameof(SilentRun));
+            if (Sandbox) flags.Add(nameof(Sandbox));
+            if (SteamFirstTimeConfig) flags.Add(nameof(SteamFirstTimeConfig));
+            if (IgnoreHotkeyWarning) flags.Add(nameof(IgnoreHotkeyWarning));
+            if (PuushMode) flags.Add(nameof(PuushMode));
+
+            string output = string.Join(", ", flags);
+
+            if (!string.IsNullOrEmpty(output))
+            {
+                DebugHelper.WriteLine("Flags: " + output);
+            }
         }
     }
 }

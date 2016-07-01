@@ -460,7 +460,7 @@ File size: {2:n0} / {3:n0} KB</value>
     <value>Screen color picker</value>
   </data>
   <data name="HotkeyType_ScreenRecorder" xml:space="preserve">
-    <value>Screen recording</value>
+    <value>Start/Stop screen recording</value>
   </data>
   <data name="HotkeyType_StopUploads" xml:space="preserve">
     <value>Stop all active uploads</value>
@@ -605,7 +605,7 @@ Would you like to download and install it?</value>
     <value>Color picker</value>
   </data>
   <data name="HotkeyType_ScreenRecorderGIF" xml:space="preserve">
-    <value>Screen recording (GIF)</value>
+    <value>Start/Stop screen recording (GIF)</value>
   </data>
   <data name="HotkeyType_StartScreenRecorderGIF" xml:space="preserve">
     <value>Start screen recording (GIF) using last region</value>
@@ -900,6 +900,12 @@ Would you like to download it?</value>
     <value>Text capture (OCR)</value>
   </data>
   <data name="HotkeyType_TextCapture_Category" xml:space="preserve">
+    <value>Screen capture</value>
+  </data>
+  <data name="HotkeyType_RectangleAnnotate" xml:space="preserve">
+    <value>Capture region (Simple annotate)</value>
+  </data>
+  <data name="HotkeyType_RectangleAnnotate_Category" xml:space="preserve">
     <value>Screen capture</value>
   </data>
 </root>

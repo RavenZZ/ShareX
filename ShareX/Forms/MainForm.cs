@@ -56,6 +56,8 @@ namespace ShareX
 
         private void MainForm_HandleCreated(object sender, EventArgs e)
         {
+            RunPuushTasks();
+
             UpdateControls();
 
             DebugHelper.WriteLine("Startup time: {0} ms", Program.StartTimer.ElapsedMilliseconds);
@@ -189,6 +191,8 @@ namespace ShareX
 
             niTray.Visible = Program.Settings.ShowTray;
 
+            flpPatreon.Visible = Program.Settings.ShowPatreonButton;
+
             TaskManager.RecentManager.InitItems();
 
             bool isPositionChanged = false;
@@ -260,7 +264,7 @@ namespace ShareX
                 lvUploads.Items[lvUploads.Items.Count - 1].EnsureVisible();
             }
 
-            if (Program.IsFirstTimeConfig)
+            if (Program.SteamFirstTimeConfig)
             {
                 using (FirstTimeConfigForm firstTimeConfigForm = new FirstTimeConfigForm())
                 {
@@ -630,7 +634,7 @@ Program.Settings.TrayMiddleClickAction.GetLocalizedDescription());
         {
             if (Program.Settings.TrayTextMoreInfo)
             {
-                niTray.Text = $"{Program.Title} ({Program.Build})";
+                niTray.Text = Program.TitleLong;
             }
             else
             {
@@ -710,7 +714,7 @@ Program.Settings.TrayMiddleClickAction.GetLocalizedDescription());
 #if RELEASE
             lock (updateTimerLock)
             {
-                if (!Program.IsPortableApps && Program.Settings.AutoCheckUpdate)
+                if (!Program.PortableApps && Program.Settings.AutoCheckUpdate)
                 {
                     if (updateTimer == null)
                     {
@@ -894,11 +898,39 @@ Program.Settings.TrayMiddleClickAction.GetLocalizedDescription());
             }
         }
 
+        private void RunPuushTasks()
+        {
+            if (Program.PuushMode && Program.Settings.IsFirstTimeRun)
+            {
+                using (PuushLoginForm puushLoginForm = new PuushLoginForm())
+                {
+                    if (puushLoginForm.ShowDialog() == DialogResult.OK)
+                    {
+                        Program.DefaultTaskSettings.ImageDestination = ImageDestination.FileUploader;
+                        Program.DefaultTaskSettings.ImageFileDestination = FileDestination.Puush;
+                        Program.DefaultTaskSettings.TextDestination = TextDestination.FileUploader;
+                        Program.DefaultTaskSettings.TextFileDestination = FileDestination.Puush;
+                        Program.DefaultTaskSettings.FileDestination = FileDestination.Puush;
+
+                        if (Program.UploadersConfig == null)
+                        {
+                            Program.UploaderSettingsResetEvent.WaitOne(5000);
+                        }
+
+                        if (Program.UploadersConfig != null)
+                        {
+                            Program.UploadersConfig.PuushAPIKey = puushLoginForm.APIKey;
+                        }
+                    }
+                }
+            }
+        }
+
         #region Form events
 
         protected override void SetVisibleCore(bool value)
         {
-            if (value && !IsHandleCreated && (Program.IsSilentRun || Program.Settings.SilentRun) && Program.Settings.ShowTray)
+            if (value && !IsHandleCreated && (Program.SilentRun || Program.Settings.SilentRun) && Program.Settings.ShowTray)
             {
                 CreateHandle();
                 value = false;
@@ -1714,7 +1746,7 @@ Program.Settings.TrayMiddleClickAction.GetLocalizedDescription());
 
         private delegate Image ScreenCaptureDelegate();
 
-        private enum LastRegionCaptureType { Default, Light, Transparent }
+        private enum LastRegionCaptureType { Default, Light, Transparent, Annotate }
 
         private LastRegionCaptureType lastRegionCaptureType = LastRegionCaptureType.Default;
 
@@ -1735,7 +1767,7 @@ Program.Settings.TrayMiddleClickAction.GetLocalizedDescription());
                     Program.HotkeyManager.HotkeyTrigger += HandleHotkeys;
                 }
 
-                Program.HotkeyManager.UpdateHotkeys(Program.HotkeysConfig.Hotkeys, !Program.NoHotkeys);
+                Program.HotkeyManager.UpdateHotkeys(Program.HotkeysConfig.Hotkeys, !Program.IgnoreHotkeyWarning);
 
                 DebugHelper.WriteLine("HotkeyManager started");
 
@@ -1820,6 +1852,9 @@ Program.Settings.TrayMiddleClickAction.GetLocalizedDescription());
                     break;
                 case HotkeyType.RectangleTransparent:
                     CaptureRectangleTransparent(safeTaskSettings, false);
+                    break;
+                case HotkeyType.RectangleAnnotate:
+                    CaptureRectangleAnnotate(safeTaskSettings, false);
                     break;
                 case HotkeyType.PolygonRegion:
                     CaptureScreenshot(CaptureType.Polygon, safeTaskSettings, false);
@@ -2126,8 +2161,7 @@ Program.Settings.TrayMiddleClickAction.GetLocalizedDescription());
             {
                 default:
                 case CaptureType.Rectangle:
-                    RectangleRegionMode mode = taskSettings.CaptureSettings.SurfaceOptions.AnnotationEnabled ? RectangleRegionMode.Annotation : RectangleRegionMode.Default;
-                    form = new RectangleRegionForm(mode);
+                    form = new RectangleRegionForm(RectangleRegionMode.Annotation);
                     break;
                 case CaptureType.Polygon:
                     form = new PolygonRegionForm();
@@ -2230,6 +2264,31 @@ Program.Settings.TrayMiddleClickAction.GetLocalizedDescription());
             }, CaptureType.Rectangle, taskSettings, autoHideForm);
         }
 
+        private void CaptureRectangleAnnotate(TaskSettings taskSettings = null, bool autoHideForm = true)
+        {
+            if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
+
+            DoCapture(() =>
+             {
+                 Image img = null;
+
+                 using (RectangleRegionAnnotateForm rectangleAnnotate = new RectangleRegionAnnotateForm(taskSettings.CaptureSettingsReference.RectangleAnnotateOptions))
+                 {
+                     if (rectangleAnnotate.ShowDialog() == DialogResult.OK)
+                     {
+                         img = rectangleAnnotate.GetAreaImage();
+
+                         if (img != null)
+                         {
+                             lastRegionCaptureType = LastRegionCaptureType.Annotate;
+                         }
+                     }
+                 }
+
+                 return img;
+             }, CaptureType.Rectangle, taskSettings, autoHideForm);
+        }
+
         private void CaptureLastRegion(TaskSettings taskSettings, bool autoHideForm = true)
         {
             switch (lastRegionCaptureType)
@@ -2280,6 +2339,22 @@ Program.Settings.TrayMiddleClickAction.GetLocalizedDescription());
                     else
                     {
                         CaptureRectangleTransparent(taskSettings, autoHideForm);
+                    }
+                    break;
+                case LastRegionCaptureType.Annotate:
+                    if (!RectangleRegionAnnotateForm.LastSelectionRectangle0Based.IsEmpty)
+                    {
+                        DoCapture(() =>
+                         {
+                             using (Image screenshot = Screenshot.CaptureFullscreen())
+                             {
+                                 return ImageHelpers.CropImage(screenshot, RectangleRegionAnnotateForm.LastSelectionRectangle0Based);
+                             }
+                         }, CaptureType.LastRegion, taskSettings, autoHideForm);
+                    }
+                    else
+                    {
+                        CaptureRectangleAnnotate(taskSettings, autoHideForm);
                     }
                     break;
             }
@@ -2455,6 +2530,17 @@ Program.Settings.TrayMiddleClickAction.GetLocalizedDescription());
         private void tsmiTrayRectangleLight_Click(object sender, EventArgs e)
         {
             CaptureRectangleLight(null, false);
+        }
+
+        private void pbPatreonOpen_Click(object sender, EventArgs e)
+        {
+            URLHelpers.OpenURL(Links.URL_PATREON);
+        }
+
+        private void pbPatreonHide_Click(object sender, EventArgs e)
+        {
+            flpPatreon.Visible = false;
+            Program.Settings.ShowPatreonButton = false;
         }
 
         private void tsmiTrayRectangleTransparent_Click(object sender, EventArgs e)

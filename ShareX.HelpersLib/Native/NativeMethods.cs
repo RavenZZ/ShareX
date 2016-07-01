@@ -363,6 +363,16 @@ namespace ShareX.HelpersLib
         [DllImport("shell32.dll")]
         public static extern IntPtr SHAppBarMessage(uint dwMessage, [In] ref APPBARDATA pData);
 
+        // http://stackoverflow.com/questions/14600987/code-to-open-windows-explorer-or-focus-if-exists-with-file-selected
+        [DllImport("shell32.dll")]
+        public static extern int SHOpenFolderAndSelectItems(IntPtr pidlFolder, int cild, IntPtr apidl, int dwFlags);
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        public static extern IntPtr ILCreateFromPathW(string pszPath);
+
+        [DllImport("shell32.dll")]
+        public static extern void ILFree(IntPtr pidl);
+
         #endregion shell32.dll
 
         #region dwmapi.dll
@@ -442,7 +452,7 @@ namespace ShareX.HelpersLib
         ///
         /// <returns>Returns zero on success or error code otherwise.</returns>
         [DllImport("avifil32.dll", CharSet = CharSet.Unicode)]
-        public static extern int AVIFileOpen(out IntPtr aviHandler, String fileName, OpenFileMode mode, IntPtr handler);
+        public static extern int AVIFileOpen(out IntPtr aviHandler, string fileName, OpenFileMode mode, IntPtr handler);
 
         /// <summary>
         /// Release an open AVI stream.

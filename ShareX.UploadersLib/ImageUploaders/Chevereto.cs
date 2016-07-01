@@ -25,6 +25,7 @@
 
 using Newtonsoft.Json;
 using ShareX.HelpersLib;
+using ShareX.UploadersLib.Properties;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -39,6 +40,8 @@ namespace ShareX.UploadersLib.ImageUploaders
     public class CheveretoImageUploaderService : ImageUploaderService
     {
         public override ImageDestination EnumValue { get; } = ImageDestination.Chevereto;
+
+        public override Image ServiceImage => Resources.Chevereto;
 
         public override bool CheckConfig(UploadersConfig config)
         {
@@ -62,7 +65,7 @@ namespace ShareX.UploadersLib.ImageUploaders
         public static List<CheveretoUploader> Uploaders = new List<CheveretoUploader>()
         {
             new CheveretoUploader("http://ultraimg.com/api/1/upload", "3374fa58c672fcaad8dab979f7687397"),
-            new CheveretoUploader("http://yukle.at/api/1/upload", "ee24aee90bcd24e39cead57c65044bde"),
+            new CheveretoUploader("http://yukle.at/3/api/1/upload", "bf3f97649acf179ac17e2b3004fa44bc"),
             new CheveretoUploader("http://img.patifile.com/api/1/upload", "8320784a9b044510e8c723fb778fe3b7"),
             new CheveretoUploader("http://boltimg.com/api/1/upload", "8dfbcb7ab9b5258a90be7cf09e361894"),
             new CheveretoUploader("http://snapie.net/myapi/1/upload", "aff7bd5bf65b7e30b675a430049894b3"),
@@ -77,7 +80,11 @@ namespace ShareX.UploadersLib.ImageUploaders
             new CheveretoUploader("http://www.storemypic.com/api/1/upload", "995269492c2a19902715d5cc3ed810fa"),
             new CheveretoUploader("https://i.tlthings.net/api/1/upload", "a7yk23ty0k13ralyh32p64hx22p7ek49tt"),
             new CheveretoUploader("https://picuza.com/api/1/upload", "f613c791e4fc79ada8ec629a9ac34d90"),
-            new CheveretoUploader("https://bobblepic.com/api/1/upload", "5f3d45874194ad6a6e8c7400932b824f")
+            new CheveretoUploader("https://bobblepic.com/api/1/upload", "5f3d45874194ad6a6e8c7400932b824f"),
+            new CheveretoUploader("http://zimg.se/api/1/upload", "25a772decbbe4381378880c5712d4ae6"),
+            new CheveretoUploader("http://forumbilder.com/api/1/upload", "7d67072c194531c3c9343f0e0eb48a54"),
+            new CheveretoUploader("http://www.img-load.de/api/1/upload", "980ac733e6d272b5d7a6ee16afb753aa"),
+            new CheveretoUploader("http://imgchr.com/api/1/upload", "a788873e81d83019f4807c87145ddf1f")
         };
 
         public CheveretoUploader Uploader { get; private set; }

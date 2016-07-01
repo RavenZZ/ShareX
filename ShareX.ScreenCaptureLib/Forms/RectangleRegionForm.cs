@@ -173,10 +173,15 @@ namespace ShareX.ScreenCaptureLib
             // Draw snap rectangles
             if (ShapeManager.IsCreating && ShapeManager.IsSnapResizing)
             {
-                foreach (Size size in Config.SnapSizes)
+                BaseShape shape = ShapeManager.CurrentShape;
+
+                if (shape != null)
                 {
-                    Rectangle snapRect = CaptureHelpers.CalculateNewRectangle(ShapeManager.PositionOnClick, ShapeManager.CurrentPosition, size);
-                    g.DrawRectangleProper(markerPen, snapRect);
+                    foreach (Size size in Config.SnapSizes)
+                    {
+                        Rectangle snapRect = CaptureHelpers.CalculateNewRectangle(shape.StartPosition, shape.EndPosition, size);
+                        g.DrawRectangleProper(markerPen, snapRect);
+                    }
                 }
             }
 
@@ -293,9 +298,9 @@ namespace ShareX.ScreenCaptureLib
             }
 
             // Draw magnifier
-            if (Config.ShowMagnifier)
+            if (Config.ShowMagnifier || Config.ShowInfo)
             {
-                DrawMagnifier(g);
+                DrawCursorGraphics(g);
             }
 
             // Draw screen wide crosshair
@@ -404,6 +409,7 @@ namespace ShareX.ScreenCaptureLib
             }
         }
 
+        // TODO: Translate
         protected virtual void WriteTips(StringBuilder sb)
         {
             sb.AppendLine(Resources.RectangleRegion_WriteTips__F1__Hide_tips);
@@ -420,8 +426,7 @@ namespace ShareX.ScreenCaptureLib
 
                 if (Mode == RectangleRegionMode.Annotation)
                 {
-                    // TODO: Translate
-                    sb.AppendLine("[Right click] Open options menu");
+                    sb.AppendLine("[Right click][Menu] Open options menu");
                 }
             }
 
@@ -438,25 +443,26 @@ namespace ShareX.ScreenCaptureLib
             if ((!Config.QuickCrop || !ShapeManager.IsCurrentShapeTypeRegion) && ShapeManager.CurrentShape != null && !ShapeManager.IsCreating)
             {
                 sb.AppendLine(Resources.RectangleRegion_WriteTips__Right_click_on_selection___Delete__Remove_region);
-                sb.AppendLine(string.Format(Resources.RectangleRegion_WriteTips__Arrow_keys__Resize_selected_region_from__0_, ShapeManager.ResizeManager.IsBottomRightResizing ?
-                    Resources.RectangleRegion_WriteTips_bottom_right : Resources.RectangleRegion_WriteTips_top_left));
-                sb.AppendLine(string.Format(Resources.RectangleRegion_WriteTips__Tab__Swap_resize_anchor_to__0_, ShapeManager.ResizeManager.IsBottomRightResizing ?
-                    Resources.RectangleRegion_WriteTips_top_left : Resources.RectangleRegion_WriteTips_bottom_right));
-                sb.AppendLine(Resources.RectangleRegion_WriteTips__Hold_Shift__Move_selected_region_instead_of_resizing);
-                sb.AppendLine(Resources.RectangleRegion_WriteTips__Hold_Ctrl__Resize___Move_faster);
+                sb.AppendLine("[Arrow keys] Resize region from top left corner");
+                sb.AppendLine("[Hold Alt + Arrow keys] Resize region from bottom right corner");
+                sb.AppendLine("[Hold Ctrl + Arrow keys] Move region");
+                sb.AppendLine("[Hold Shift + Arrow keys] Resize or move region faster");
                 sb.AppendLine(Resources.RectangleRegion_WriteTips__Hold_Left_click_on_selection__Move_region);
             }
             else
             {
                 sb.AppendLine(Resources.RectangleRegion_WriteTips__Arrow_keys__Move_cursor_position);
-                sb.AppendLine(Resources.RectangleRegion_WriteTips__Ctrl___Arrow_keys__Move_cursor_position_faster);
+                sb.AppendLine("[Hold Shift + Arrow keys] Move cursor position faster");
             }
 
             if (ShapeManager.IsCreating)
             {
+                sb.AppendLine("[Hold Ctrl] Move selection");
                 sb.AppendLine(Resources.RectangleRegion_WriteTips__Hold_Shift__Proportional_resizing);
                 sb.AppendLine(Resources.RectangleRegion_WriteTips__Hold_Alt__Snap_resizing_to_preset_sizes);
             }
+
+            sb.AppendLine();
 
             if (ShapeManager.IsCurrentRectangleValid)
             {
@@ -471,7 +477,6 @@ namespace ShareX.ScreenCaptureLib
                 sb.AppendLine(Resources.RectangleRegion_WriteTips__Ctrl___C__Copy_position);
             }
 
-            // TODO: Translate
             sb.AppendLine("[Ctrl + Mouse wheel] Change magnifier size");
 
             sb.AppendLine();
@@ -480,11 +485,18 @@ namespace ShareX.ScreenCaptureLib
             sb.AppendLine(Resources.RectangleRegion_WriteTips__1__2__3_____0__Monitor_capture);
             sb.AppendLine(Resources.RectangleRegion_WriteTips_____Active_monitor_capture);
 
-            if (Mode == RectangleRegionMode.Annotation)
+            if (Mode == RectangleRegionMode.Annotation && !ShapeManager.IsCreating)
             {
                 sb.AppendLine();
 
-                // TODO: Translate
+                if (ShapeManager.IsCurrentShapeTypeRegion)
+                {
+                    sb.AppendLine("[Tab] [Mouse 4 click] Select last annotation tool");
+                }
+                else
+                {
+                    sb.AppendLine("[Tab] [Mouse 4 click] Select last region tool");
+                }
                 sb.AppendLine("[Mouse wheel] Change current tool");
                 if (ShapeManager.CurrentShapeType == ShapeType.RegionRectangle) sb.Append("-> ");
                 sb.AppendLine(string.Format("[{0}] {1}", "Numpad 0", ShapeType.RegionRectangle.GetLocalizedDescription()));
@@ -540,7 +552,8 @@ namespace ShareX.ScreenCaptureLib
                         Replace("$b", color.B.ToString(), StringComparison.InvariantCultureIgnoreCase).
                         Replace("$hex", ColorHelpers.ColorToHex(color), StringComparison.InvariantCultureIgnoreCase).
                         Replace("$x", CurrentPosition.X.ToString(), StringComparison.InvariantCultureIgnoreCase).
-                        Replace("$y", CurrentPosition.Y.ToString(), StringComparison.InvariantCultureIgnoreCase);
+                        Replace("$y", CurrentPosition.Y.ToString(), StringComparison.InvariantCultureIgnoreCase).
+                        Replace("$n", Environment.NewLine, StringComparison.InvariantCultureIgnoreCase);
                 }
 
                 return string.Format(Resources.RectangleRegion_GetColorPickerText, color.R, color.G, color.B, ColorHelpers.ColorToHex(color), CurrentPosition.X, CurrentPosition.Y);
@@ -583,66 +596,88 @@ namespace ShareX.ScreenCaptureLib
             }
         }
 
-        private void DrawMagnifier(Graphics g)
+        private void DrawCursorGraphics(Graphics g)
         {
             Point mousePos = InputManager.MousePosition0Based;
             Rectangle currentScreenRect0Based = CaptureHelpers.GetActiveScreenBounds0Based();
-            int offsetX = 10, offsetY = 10, infoTextOffset = 0, infoTextPadding = 3;
+            int cursorOffsetX = 10, cursorOffsetY = 10, itemGap = 10, itemCount = 0;
+            Size totalSize = Size.Empty;
+
+            int magnifierPosition = 0;
+            Bitmap magnifier = null;
+
+            if (Config.ShowMagnifier)
+            {
+                if (itemCount > 0) totalSize.Height += itemGap;
+                magnifierPosition = totalSize.Height;
+
+                magnifier = Magnifier(backgroundImage, mousePos, Config.MagnifierPixelCount, Config.MagnifierPixelCount, Config.MagnifierPixelSize);
+                totalSize.Width = Math.Max(totalSize.Width, magnifier.Width);
+
+                totalSize.Height += magnifier.Height;
+                itemCount++;
+            }
+
+            int infoTextPadding = 3;
+            int infoTextPosition = 0;
             Rectangle infoTextRect = Rectangle.Empty;
             string infoText = "";
 
             if (Config.ShowInfo)
             {
-                infoTextOffset = 10;
+                if (itemCount > 0) totalSize.Height += itemGap;
+                infoTextPosition = totalSize.Height;
 
                 CurrentPosition = InputManager.MousePosition;
-
                 infoText = GetInfoText();
                 Size textSize = g.MeasureString(infoText, infoFont).ToSize();
                 infoTextRect.Size = new Size(textSize.Width + infoTextPadding * 2, textSize.Height + infoTextPadding * 2);
+                totalSize.Width = Math.Max(totalSize.Width, infoTextRect.Width);
+
+                totalSize.Height += infoTextRect.Height;
+                itemCount++;
             }
 
-            using (Bitmap magnifier = Magnifier(backgroundImage, mousePos, Config.MagnifierPixelCount, Config.MagnifierPixelCount, Config.MagnifierPixelSize))
+            int x = mousePos.X + cursorOffsetX;
+
+            if (x + totalSize.Width > currentScreenRect0Based.Right)
             {
-                int x = mousePos.X + offsetX;
+                x = mousePos.X - cursorOffsetX - totalSize.Width;
+            }
 
-                if (x + magnifier.Width > currentScreenRect0Based.Right)
-                {
-                    x = mousePos.X - offsetX - magnifier.Width;
-                }
+            int y = mousePos.Y + cursorOffsetY;
 
-                int y = mousePos.Y + offsetY;
+            if (y + totalSize.Height > currentScreenRect0Based.Bottom)
+            {
+                y = mousePos.Y - cursorOffsetY - totalSize.Height;
+            }
 
-                if (y + magnifier.Height + infoTextOffset + infoTextRect.Height > currentScreenRect0Based.Bottom)
-                {
-                    y = mousePos.Y - offsetY - magnifier.Height - infoTextOffset - infoTextRect.Height;
-                }
-
-                if (Config.ShowInfo)
-                {
-                    infoTextRect.Location = new Point(x + (magnifier.Width / 2) - (infoTextRect.Width / 2), y + magnifier.Height + infoTextOffset);
-                    DrawInfoText(g, infoText, infoTextRect, infoFont, infoTextPadding);
-                }
-
-                g.SetHighQuality();
-
+            if (Config.ShowMagnifier)
+            {
+                using (GraphicsQualityManager quality = new GraphicsQualityManager(g))
                 using (TextureBrush brush = new TextureBrush(magnifier))
                 {
-                    brush.TranslateTransform(x, y);
+                    brush.TranslateTransform(x, y + magnifierPosition);
 
                     if (Config.UseSquareMagnifier)
                     {
-                        g.FillRectangle(brush, x, y, magnifier.Width, magnifier.Height);
-                        g.DrawRectangleProper(Pens.White, x - 1, y - 1, magnifier.Width + 2, magnifier.Height + 2);
-                        g.DrawRectangleProper(Pens.Black, x, y, magnifier.Width, magnifier.Height);
+                        g.FillRectangle(brush, x, y + magnifierPosition, magnifier.Width, magnifier.Height);
+                        g.DrawRectangleProper(Pens.White, x - 1, y + magnifierPosition - 1, magnifier.Width + 2, magnifier.Height + 2);
+                        g.DrawRectangleProper(Pens.Black, x, y + magnifierPosition, magnifier.Width, magnifier.Height);
                     }
                     else
                     {
-                        g.FillEllipse(brush, x, y, magnifier.Width, magnifier.Height);
-                        g.DrawEllipse(Pens.White, x - 1, y - 1, magnifier.Width + 2, magnifier.Height + 2);
-                        g.DrawEllipse(Pens.Black, x, y, magnifier.Width, magnifier.Height);
+                        g.FillEllipse(brush, x, y + magnifierPosition, magnifier.Width, magnifier.Height);
+                        g.DrawEllipse(Pens.White, x - 1, y + magnifierPosition - 1, magnifier.Width + 2, magnifier.Height + 2);
+                        g.DrawEllipse(Pens.Black, x, y + magnifierPosition, magnifier.Width, magnifier.Height);
                     }
                 }
+            }
+
+            if (Config.ShowInfo)
+            {
+                infoTextRect.Location = new Point(x + (totalSize.Width / 2) - (infoTextRect.Width / 2), y + infoTextPosition);
+                DrawInfoText(g, infoText, infoTextRect, infoFont, infoTextPadding);
             }
         }
 

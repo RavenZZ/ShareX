@@ -121,7 +121,7 @@
     <value>Annuler</value>
   </data>
   <data name="lblEmail.Text" xml:space="preserve">
-    <value>E-mail:</value>
+    <value>Adresse e-mail :</value>
   </data>
   <data name="lblFullName.Text" xml:space="preserve">
     <value>Nom complet :</value>

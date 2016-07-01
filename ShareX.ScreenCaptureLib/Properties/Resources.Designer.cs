@@ -61,6 +61,15 @@ namespace ShareX.ScreenCaptureLib.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Region capture.
+        /// </summary>
+        internal static string BaseRegionForm_InitializeComponent_Region_capture {
+            get {
+                return ResourceManager.GetString("BaseRegionForm_InitializeComponent_Region_capture", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         internal static System.Drawing.Bitmap counter_reset {
@@ -584,24 +593,6 @@ namespace ShareX.ScreenCaptureLib.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [Arrow keys] Resize selected region from {0}.
-        /// </summary>
-        internal static string RectangleRegion_WriteTips__Arrow_keys__Resize_selected_region_from__0_ {
-            get {
-                return ResourceManager.GetString("RectangleRegion_WriteTips__Arrow_keys__Resize_selected_region_from__0_", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to [Ctrl + Arrow keys] Move cursor position faster.
-        /// </summary>
-        internal static string RectangleRegion_WriteTips__Ctrl___Arrow_keys__Move_cursor_position_faster {
-            get {
-                return ResourceManager.GetString("RectangleRegion_WriteTips__Ctrl___Arrow_keys__Move_cursor_position_faster", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to [Ctrl + C] Copy info.
         /// </summary>
         internal static string RectangleRegion_WriteTips__Ctrl___C__Copy_info {
@@ -665,15 +656,6 @@ namespace ShareX.ScreenCaptureLib.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [Hold Ctrl] Resize / Move faster.
-        /// </summary>
-        internal static string RectangleRegion_WriteTips__Hold_Ctrl__Resize___Move_faster {
-            get {
-                return ResourceManager.GetString("RectangleRegion_WriteTips__Hold_Ctrl__Resize___Move_faster", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to [Hold left click] [Insert] Start region selection.
         /// </summary>
         internal static string RectangleRegion_WriteTips__Hold_Left_click__Start_region_selection {
@@ -688,15 +670,6 @@ namespace ShareX.ScreenCaptureLib.Properties {
         internal static string RectangleRegion_WriteTips__Hold_Left_click_on_selection__Move_region {
             get {
                 return ResourceManager.GetString("RectangleRegion_WriteTips__Hold_Left_click_on_selection__Move_region", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to [Hold Shift] Move selected region instead of resizing.
-        /// </summary>
-        internal static string RectangleRegion_WriteTips__Hold_Shift__Move_selected_region_instead_of_resizing {
-            get {
-                return ResourceManager.GetString("RectangleRegion_WriteTips__Hold_Shift__Move_selected_region_instead_of_resizing", resourceCulture);
             }
         }
         
@@ -746,33 +719,6 @@ namespace ShareX.ScreenCaptureLib.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [Tab] Swap resize anchor to {0}.
-        /// </summary>
-        internal static string RectangleRegion_WriteTips__Tab__Swap_resize_anchor_to__0_ {
-            get {
-                return ResourceManager.GetString("RectangleRegion_WriteTips__Tab__Swap_resize_anchor_to__0_", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to bottom right.
-        /// </summary>
-        internal static string RectangleRegion_WriteTips_bottom_right {
-            get {
-                return ResourceManager.GetString("RectangleRegion_WriteTips_bottom_right", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to top left.
-        /// </summary>
-        internal static string RectangleRegion_WriteTips_top_left {
-            get {
-                return ResourceManager.GetString("RectangleRegion_WriteTips_top_left", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Rectangle capture transparent.
         /// </summary>
         internal static string RectangleTransparent_RectangleTransparent_Rectangle_capture_transparent {
@@ -796,15 +742,6 @@ namespace ShareX.ScreenCaptureLib.Properties {
         internal static string ScrollingCaptureForm_StopCapture_Start_capture {
             get {
                 return ResourceManager.GetString("ScrollingCaptureForm_StopCapture_Start_capture", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Region capture.
-        /// </summary>
-        internal static string Surface_InitializeComponent_Region_capture {
-            get {
-                return ResourceManager.GetString("Surface_InitializeComponent_Region_capture", resourceCulture);
             }
         }
         

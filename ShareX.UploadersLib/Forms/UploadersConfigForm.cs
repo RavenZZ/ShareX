@@ -88,66 +88,17 @@ namespace ShareX.UploadersLib
                 Text += " - " + Config.FilePath;
             }
 
-            uploadersImageList = new ImageList();
-            uploadersImageList.ColorDepth = ColorDepth.Depth32Bit;
-
-            AddIconToTab(tpAdFly, Resources.AdFly);
-            AddIconToTab(tpAmazonS3, Resources.AmazonS3);
-            AddIconToTab(tpBitly, Resources.Bitly);
-            AddIconToTab(tpBox, Resources.Box);
-            AddIconToTab(tpChevereto, Resources.Chevereto);
-            AddIconToTab(tpCoinURL, Resources.CoinURL);
-            AddIconToTab(tpCustomUploaders, Resources.globe_network);
-            AddIconToTab(tpDropbox, Resources.Dropbox);
-            AddIconToTab(tpEmail, Resources.mail);
-            AddIconToTab(tpFlickr, Resources.Flickr);
-            AddIconToTab(tpFTP, Resources.folder_network);
-            AddIconToTab(tpGe_tt, Resources.Gett);
-            AddIconToTab(tpGist, Resources.GitHub);
-            AddIconToTab(tpGoogleDrive, Resources.GoogleDrive);
-            AddIconToTab(tpGoogleURLShortener, Resources.Google);
-            AddIconToTab(tpHastebin, Resources.Hastebin);
-            AddIconToTab(tpHostr, Resources.Hostr);
-            AddIconToTab(tpImageShack, Resources.ImageShack);
-            AddIconToTab(tpImgur, Resources.Imgur);
-            AddIconToTab(tpJira, Resources.jira);
-            AddIconToTab(tpLambda, Resources.Lambda);
-            AddIconToTab(tpLithiio, Resources.Lithiio);
-            AddIconToTab(tpMediaFire, Resources.MediaFire);
-            AddIconToTab(tpMega, Resources.Mega);
-            AddIconToTab(tpMinus, Resources.Minus);
-            AddIconToTab(tpOneDrive, Resources.OneDrive);
-            AddIconToTab(tpOneTimeSecret, Resources.OneTimeSecret);
-            AddIconToTab(tpOwnCloud, Resources.OwnCloud);
-            AddIconToTab(tpPaste_ee, Resources.page_white_text);
-            AddIconToTab(tpPastebin, Resources.Pastebin);
-            AddIconToTab(tpPhotobucket, Resources.Photobucket);
-            AddIconToTab(tpPicasa, Resources.Picasa);
-            AddIconToTab(tpPolr, Resources.Polr);
-            AddIconToTab(tpPomf, Resources.Pomf);
-            AddIconToTab(tpPushbullet, Resources.Pushbullet);
-            AddIconToTab(tpSeafile, Resources.Seafile);
-            AddIconToTab(tpSendSpace, Resources.SendSpace);
-            AddIconToTab(tpSharedFolder, Resources.server_network);
-            AddIconToTab(tpSomeImage, Resources.SomeImage);
-            AddIconToTab(tpStreamable, Resources.Streamable);
-            AddIconToTab(tpSul, Resources.Sul);
-            AddIconToTab(tpTinyPic, Resources.TinyPic);
-            AddIconToTab(tpTwitter, Resources.Twitter);
-            AddIconToTab(tpUp1, Resources.Up1);
-            AddIconToTab(tpUpaste, Resources.Upaste);
-            AddIconToTab(tpVgyme, Resources.Vgyme);
-            AddIconToTab(tpYourls, Resources.Yourls);
+            AddIconToTabs();
 
             ttlvMain.ImageList = uploadersImageList;
             ttlvMain.MainTabControl = tcUploaders;
             ttlvMain.FocusListView();
 
-            CodeMenu.Create(txtDropboxPath, ReplCodeMenuEntry.n, ReplCodeMenuEntry.t, ReplCodeMenuEntry.pn);
-            CodeMenu.Create(txtAmazonS3ObjectPrefix, ReplCodeMenuEntry.n, ReplCodeMenuEntry.t, ReplCodeMenuEntry.pn);
-            CodeMenu.Create(txtMediaFirePath, ReplCodeMenuEntry.n, ReplCodeMenuEntry.t, ReplCodeMenuEntry.pn);
-            CodeMenu.Create(txtCustomUploaderArgValue, ReplCodeMenuEntry.n, ReplCodeMenuEntry.t, ReplCodeMenuEntry.pn);
-            CodeMenu.Create(txtCustomUploaderHeaderValue, ReplCodeMenuEntry.n, ReplCodeMenuEntry.t, ReplCodeMenuEntry.pn);
+            CodeMenu.Create<ReplCodeMenuEntry>(txtDropboxPath, ReplCodeMenuEntry.n, ReplCodeMenuEntry.t, ReplCodeMenuEntry.pn);
+            CodeMenu.Create<ReplCodeMenuEntry>(txtAmazonS3ObjectPrefix, ReplCodeMenuEntry.n, ReplCodeMenuEntry.t, ReplCodeMenuEntry.pn);
+            CodeMenu.Create<ReplCodeMenuEntry>(txtMediaFirePath, ReplCodeMenuEntry.n, ReplCodeMenuEntry.t, ReplCodeMenuEntry.pn);
+            CodeMenu.Create<ReplCodeMenuEntry>(txtCustomUploaderArgValue, ReplCodeMenuEntry.n, ReplCodeMenuEntry.t, ReplCodeMenuEntry.pn);
+            CodeMenu.Create<ReplCodeMenuEntry>(txtCustomUploaderHeaderValue, ReplCodeMenuEntry.n, ReplCodeMenuEntry.t, ReplCodeMenuEntry.pn);
 
             txtCustomUploaderLog.AddContextMenu();
 
@@ -174,16 +125,36 @@ namespace ShareX.UploadersLib
 #endif
         }
 
-        private void AddIconToTab(TabPage tp, Icon icon)
+        private void AddIconToTabs()
         {
-            uploadersImageList.Images.Add(tp.Name, icon);
-            tp.ImageKey = tp.Name;
-        }
+            uploadersImageList = new ImageList();
+            uploadersImageList.ColorDepth = ColorDepth.Depth32Bit;
 
-        private void AddIconToTab(TabPage tp, Bitmap bitmap)
-        {
-            uploadersImageList.Images.Add(tp.Name, bitmap);
-            tp.ImageKey = tp.Name;
+            foreach (IUploaderService uploaderService in UploaderFactory.AllServices)
+            {
+                TabPage tp = uploaderService.GetUploadersConfigTabPage(this);
+
+                if (tp != null && string.IsNullOrEmpty(tp.ImageKey))
+                {
+                    Icon icon = uploaderService.ServiceIcon;
+
+                    if (icon != null)
+                    {
+                        uploadersImageList.Images.Add(tp.Name, icon);
+                        tp.ImageKey = tp.Name;
+                    }
+                    else
+                    {
+                        Image img = uploaderService.ServiceImage;
+
+                        if (img != null)
+                        {
+                            uploadersImageList.Images.Add(tp.Name, img);
+                            tp.ImageKey = tp.Name;
+                        }
+                    }
+                }
+            }
         }
 
         public void NavigateToTabPage(TabPage tp)
@@ -345,6 +316,21 @@ namespace ShareX.UploadersLib
 
             #region File uploaders
 
+            // FTP
+
+            if (Config.FTPAccountList == null || Config.FTPAccountList.Count == 0)
+            {
+                FTPSetup(new List<FTPAccount>());
+            }
+            else
+            {
+                FTPSetup(Config.FTPAccountList);
+                if (ucFTPAccounts.lbAccounts.Items.Count > 0)
+                {
+                    ucFTPAccounts.lbAccounts.SelectedIndex = 0;
+                }
+            }
+
             // Dropbox
 
             if (OAuth2Info.CheckOAuth(Config.DropboxOAuth2Info))
@@ -359,21 +345,6 @@ namespace ShareX.UploadersLib
             cbDropboxURLType.SelectedIndex = (int)Config.DropboxURLType;
             UpdateDropboxStatus();
 
-            // Google Drive
-
-            if (OAuth2Info.CheckOAuth(Config.GoogleDriveOAuth2Info))
-            {
-                oauth2GoogleDrive.Status = OAuthLoginStatus.LoginSuccessful;
-                btnGoogleDriveRefreshFolders.Enabled = true;
-
-                tvOneDrive.Enabled = true;
-            }
-
-            cbGoogleDriveIsPublic.Checked = Config.GoogleDriveIsPublic;
-            cbGoogleDriveUseFolder.Checked = Config.GoogleDriveUseFolder;
-            txtGoogleDriveFolderID.Enabled = Config.GoogleDriveUseFolder;
-            txtGoogleDriveFolderID.Text = Config.GoogleDriveFolderID;
-
             // OneDrive
 
             tvOneDrive.Nodes.Clear();
@@ -387,6 +358,26 @@ namespace ShareX.UploadersLib
             cbOneDriveCreateShareableLink.Checked = Config.OneDriveAutoCreateShareableLink;
             lblOneDriveFolderID.Text = Resources.UploadersConfigForm_LoadSettings_Selected_folder_ + " " + Config.OneDriveSelectedFolder.name;
             tvOneDrive.CollapseAll();
+
+            // Google Drive
+
+            if (OAuth2Info.CheckOAuth(Config.GoogleDriveOAuth2Info))
+            {
+                oauth2GoogleDrive.Status = OAuthLoginStatus.LoginSuccessful;
+                btnGoogleDriveRefreshFolders.Enabled = true;
+
+                tvOneDrive.Enabled = true;
+            }
+
+            cbGoogleDriveIsPublic.Checked = Config.GoogleDriveIsPublic;
+            cbGoogleDriveDirectLink.Checked = Config.GoogleDriveDirectLink;
+            cbGoogleDriveUseFolder.Checked = Config.GoogleDriveUseFolder;
+            txtGoogleDriveFolderID.Enabled = Config.GoogleDriveUseFolder;
+            txtGoogleDriveFolderID.Text = Config.GoogleDriveFolderID;
+
+            // puush
+
+            txtPuushAPIKey.Text = Config.PuushAPIKey;
 
             // Minus
 
@@ -417,21 +408,6 @@ namespace ShareX.UploadersLib
             txtLocalhostrEmail.Text = Config.LocalhostrEmail;
             txtLocalhostrPassword.Text = Config.LocalhostrPassword;
             cbLocalhostrDirectURL.Checked = Config.LocalhostrDirectURL;
-
-            // FTP
-
-            if (Config.FTPAccountList == null || Config.FTPAccountList.Count == 0)
-            {
-                FTPSetup(new List<FTPAccount>());
-            }
-            else
-            {
-                FTPSetup(Config.FTPAccountList);
-                if (ucFTPAccounts.lbAccounts.Items.Count > 0)
-                {
-                    ucFTPAccounts.lbAccounts.SelectedIndex = 0;
-                }
-            }
 
             // Email
 
@@ -1245,6 +1221,105 @@ namespace ShareX.UploadersLib
 
         #region File Uploaders
 
+        #region FTP
+
+        private void cboFtpImages_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            Config.FTPSelectedImage = cboFtpImages.SelectedIndex;
+        }
+
+        private void cboFtpText_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            Config.FTPSelectedText = cboFtpText.SelectedIndex;
+        }
+
+        private void cboFtpFiles_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            Config.FTPSelectedFile = cboFtpFiles.SelectedIndex;
+        }
+
+        private void btnFtpClient_Click(object sender, EventArgs e)
+        {
+            FTPOpenClient();
+        }
+
+        private object eiFTP_ExportRequested()
+        {
+            return GetSelectedFTPAccount();
+        }
+
+        private void eiFTP_ImportRequested(object obj)
+        {
+            AddFTPAccount(obj as FTPAccount);
+        }
+
+        private void FTPSetup(IEnumerable<FTPAccount> accs)
+        {
+            if (accs != null)
+            {
+                int selFtpList = ucFTPAccounts.lbAccounts.SelectedIndex;
+
+                ucFTPAccounts.lbAccounts.Items.Clear();
+                ucFTPAccounts.pgSettings.PropertySort = PropertySort.Categorized;
+                cboFtpImages.Items.Clear();
+                cboFtpText.Items.Clear();
+                cboFtpFiles.Items.Clear();
+
+                Config.FTPAccountList = new List<FTPAccount>();
+                Config.FTPAccountList.AddRange(accs);
+
+                foreach (FTPAccount acc in Config.FTPAccountList)
+                {
+                    ucFTPAccounts.lbAccounts.Items.Add(acc);
+                    cboFtpImages.Items.Add(acc);
+                    cboFtpText.Items.Add(acc);
+                    cboFtpFiles.Items.Add(acc);
+                }
+
+                if (ucFTPAccounts.lbAccounts.Items.Count > 0)
+                {
+                    ucFTPAccounts.lbAccounts.SelectedIndex = selFtpList.Between(0, ucFTPAccounts.lbAccounts.Items.Count - 1);
+                    cboFtpImages.SelectedIndex = Config.FTPSelectedImage.Between(0, ucFTPAccounts.lbAccounts.Items.Count - 1);
+                    cboFtpText.SelectedIndex = Config.FTPSelectedText.Between(0, ucFTPAccounts.lbAccounts.Items.Count - 1);
+                    cboFtpFiles.SelectedIndex = Config.FTPSelectedFile.Between(0, ucFTPAccounts.lbAccounts.Items.Count - 1);
+                }
+            }
+        }
+
+        private void FTPAccountAddButton_Click(object sender, EventArgs e)
+        {
+            AddFTPAccount(new FTPAccount());
+        }
+
+        private void FTPAccountRemoveButton_Click(object sender, EventArgs e)
+        {
+            int sel = ucFTPAccounts.lbAccounts.SelectedIndex;
+            if (ucFTPAccounts.RemoveItem(sel))
+            {
+                Config.FTPAccountList.RemoveAt(sel);
+            }
+            FTPSetup(Config.FTPAccountList);
+        }
+
+        private void FTPAccountDuplicateButton_Click(object sender, EventArgs e)
+        {
+            FTPAccount src = (FTPAccount)ucFTPAccounts.lbAccounts.Items[ucFTPAccounts.lbAccounts.SelectedIndex];
+            FTPAccount clone = src.Clone();
+            AddFTPAccount(clone);
+        }
+
+        private void FTPAccountTestButton_Click(object sender, EventArgs e)
+        {
+            TestFTPAccountAsync(GetSelectedFTPAccount());
+        }
+
+        private void FtpAccountSettingsGrid_PropertyValueChanged(object s, PropertyValueChangedEventArgs e)
+        {
+            FTPSetup(Config.FTPAccountList);
+        }
+
+        #endregion FTP
+
         #region Dropbox
 
         private void pbDropboxLogo_Click(object sender, EventArgs e)
@@ -1271,11 +1346,6 @@ namespace ShareX.UploadersLib
         {
             Config.DropboxUploadPath = txtDropboxPath.Text;
             UpdateDropboxStatus();
-        }
-
-        private void btnDropboxShowFiles_Click(object sender, EventArgs e)
-        {
-            DropboxOpenFiles();
         }
 
         private void cbDropboxAutoCreateShareableLink_CheckedChanged(object sender, EventArgs e)
@@ -1366,6 +1436,11 @@ namespace ShareX.UploadersLib
             Config.GoogleDriveIsPublic = cbGoogleDriveIsPublic.Checked;
         }
 
+        private void cbGoogleDriveDirectLink_CheckedChanged(object sender, EventArgs e)
+        {
+            Config.GoogleDriveDirectLink = cbGoogleDriveDirectLink.Checked;
+        }
+
         private void cbGoogleDriveUseFolder_CheckedChanged(object sender, EventArgs e)
         {
             Config.GoogleDriveUseFolder = cbGoogleDriveUseFolder.Checked;
@@ -1396,6 +1471,76 @@ namespace ShareX.UploadersLib
         }
 
         #endregion Google Drive
+
+        #region puush
+
+        private bool PuushValidationCheck()
+        {
+            bool result = true;
+
+            if (string.IsNullOrEmpty(txtPuushEmail.Text))
+            {
+                txtPuushEmail.BackColor = Color.FromArgb(255, 200, 200);
+                result = false;
+            }
+            else
+            {
+                txtPuushEmail.BackColor = SystemColors.Window;
+            }
+
+            if (string.IsNullOrEmpty(txtPuushPassword.Text))
+            {
+                txtPuushPassword.BackColor = Color.FromArgb(255, 200, 200);
+                result = false;
+            }
+            else
+            {
+                txtPuushPassword.BackColor = SystemColors.Window;
+            }
+
+            return result;
+        }
+
+        private void pbPuush_Click(object sender, EventArgs e)
+        {
+            URLHelpers.OpenURL(Puush.PuushURL);
+        }
+
+        private void llPuushCreateAccount_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            URLHelpers.OpenURL(Puush.PuushRegisterURL);
+        }
+
+        private void llPuushForgottenPassword_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            URLHelpers.OpenURL(Puush.PuushResetPasswordURL);
+        }
+
+        private void btnPuushLogin_Click(object sender, EventArgs e)
+        {
+            if (PuushValidationCheck())
+            {
+                txtPuushAPIKey.Text = "";
+
+                string apiKey = new Puush().Login(txtPuushEmail.Text, txtPuushPassword.Text);
+
+                if (!string.IsNullOrEmpty(apiKey))
+                {
+                    txtPuushAPIKey.Text = apiKey;
+                }
+                else
+                {
+                    MessageBox.Show("Login failed.", "Authentication failure", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void txtPuushAPIKey_TextChanged(object sender, EventArgs e)
+        {
+            Config.PuushAPIKey = txtPuushAPIKey.Text;
+        }
+
+        #endregion puush
 
         #region Box
 
@@ -1551,105 +1696,6 @@ namespace ShareX.UploadersLib
         }
 
         #endregion Minus
-
-        #region FTP
-
-        private void cboFtpImages_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            Config.FTPSelectedImage = cboFtpImages.SelectedIndex;
-        }
-
-        private void cboFtpText_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            Config.FTPSelectedText = cboFtpText.SelectedIndex;
-        }
-
-        private void cboFtpFiles_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            Config.FTPSelectedFile = cboFtpFiles.SelectedIndex;
-        }
-
-        private void btnFtpClient_Click(object sender, EventArgs e)
-        {
-            FTPOpenClient();
-        }
-
-        private object eiFTP_ExportRequested()
-        {
-            return GetSelectedFTPAccount();
-        }
-
-        private void eiFTP_ImportRequested(object obj)
-        {
-            AddFTPAccount(obj as FTPAccount);
-        }
-
-        private void FTPSetup(IEnumerable<FTPAccount> accs)
-        {
-            if (accs != null)
-            {
-                int selFtpList = ucFTPAccounts.lbAccounts.SelectedIndex;
-
-                ucFTPAccounts.lbAccounts.Items.Clear();
-                ucFTPAccounts.pgSettings.PropertySort = PropertySort.Categorized;
-                cboFtpImages.Items.Clear();
-                cboFtpText.Items.Clear();
-                cboFtpFiles.Items.Clear();
-
-                Config.FTPAccountList = new List<FTPAccount>();
-                Config.FTPAccountList.AddRange(accs);
-
-                foreach (FTPAccount acc in Config.FTPAccountList)
-                {
-                    ucFTPAccounts.lbAccounts.Items.Add(acc);
-                    cboFtpImages.Items.Add(acc);
-                    cboFtpText.Items.Add(acc);
-                    cboFtpFiles.Items.Add(acc);
-                }
-
-                if (ucFTPAccounts.lbAccounts.Items.Count > 0)
-                {
-                    ucFTPAccounts.lbAccounts.SelectedIndex = selFtpList.Between(0, ucFTPAccounts.lbAccounts.Items.Count - 1);
-                    cboFtpImages.SelectedIndex = Config.FTPSelectedImage.Between(0, ucFTPAccounts.lbAccounts.Items.Count - 1);
-                    cboFtpText.SelectedIndex = Config.FTPSelectedText.Between(0, ucFTPAccounts.lbAccounts.Items.Count - 1);
-                    cboFtpFiles.SelectedIndex = Config.FTPSelectedFile.Between(0, ucFTPAccounts.lbAccounts.Items.Count - 1);
-                }
-            }
-        }
-
-        private void FTPAccountAddButton_Click(object sender, EventArgs e)
-        {
-            AddFTPAccount(new FTPAccount());
-        }
-
-        private void FTPAccountRemoveButton_Click(object sender, EventArgs e)
-        {
-            int sel = ucFTPAccounts.lbAccounts.SelectedIndex;
-            if (ucFTPAccounts.RemoveItem(sel))
-            {
-                Config.FTPAccountList.RemoveAt(sel);
-            }
-            FTPSetup(Config.FTPAccountList);
-        }
-
-        private void FTPAccountDuplicateButton_Click(object sender, EventArgs e)
-        {
-            FTPAccount src = (FTPAccount)ucFTPAccounts.lbAccounts.Items[ucFTPAccounts.lbAccounts.SelectedIndex];
-            FTPAccount clone = src.Clone();
-            AddFTPAccount(clone);
-        }
-
-        private void FTPAccountTestButton_Click(object sender, EventArgs e)
-        {
-            TestFTPAccountAsync(GetSelectedFTPAccount());
-        }
-
-        private void FtpAccountSettingsGrid_PropertyValueChanged(object s, PropertyValueChangedEventArgs e)
-        {
-            FTPSetup(Config.FTPAccountList);
-        }
-
-        #endregion FTP
 
         #region Email
 
@@ -2773,7 +2819,7 @@ namespace ShareX.UploadersLib
 
         private void btnCustomUploaderClearUploaders_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("Remove all custom uploaders?", "ShareX", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show(Resources.UploadersConfigForm_Remove_all_custom_uploaders_Confirmation, "ShareX", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 CustomUploaderClearUploaders();
             }

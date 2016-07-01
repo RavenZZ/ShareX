@@ -41,7 +41,7 @@ namespace ShareX.ScreenCaptureLib
     {
         public static GraphicsPath LastRegionFillPath { get; protected set; }
 
-        public SurfaceOptions Config { get; set; }
+        public RegionCaptureOptions Config { get; set; }
         public int FPS { get; private set; }
         public Rectangle ScreenRectangle { get; private set; }
         public Rectangle ScreenRectangle0Based { get; private set; }
@@ -73,7 +73,7 @@ namespace ShareX.ScreenCaptureLib
             }
 
             drawableObjects = new List<DrawableObject>();
-            Config = new SurfaceOptions();
+            Config = new RegionCaptureOptions();
             timerStart = new Stopwatch();
             timerFPS = new Stopwatch();
 
@@ -87,7 +87,7 @@ namespace ShareX.ScreenCaptureLib
             textBackgroundBrush = new SolidBrush(Color.FromArgb(75, Color.Black));
             textBackgroundPenWhite = new Pen(Color.FromArgb(50, Color.White));
             textBackgroundPenBlack = new Pen(Color.FromArgb(150, Color.Black));
-            markerPen = new Pen(Color.FromArgb(200, Color.Red)) { DashStyle = DashStyle.Dash };
+            markerPen = new Pen(Color.FromArgb(200, Color.Red));
         }
 
         private void InitializeComponent()
@@ -101,7 +101,7 @@ namespace ShareX.ScreenCaptureLib
             FormBorderStyle = FormBorderStyle.None;
             Bounds = ScreenRectangle;
             SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint, true);
-            Text = "ShareX - " + Resources.Surface_InitializeComponent_Region_capture;
+            Text = "ShareX - " + Resources.BaseRegionForm_InitializeComponent_Region_capture;
             ShowInTaskbar = false;
 #if !DEBUG
             TopMost = true;

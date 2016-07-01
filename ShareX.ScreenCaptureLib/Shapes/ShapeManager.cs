@@ -70,6 +70,18 @@ namespace ShareX.ScreenCaptureLib
             {
                 currentShapeType = value;
 
+                if (form.Mode == RectangleRegionMode.Annotation)
+                {
+                    if (IsCurrentShapeTypeRegion)
+                    {
+                        Config.LastRegionTool = CurrentShapeType;
+                    }
+                    else
+                    {
+                        Config.LastAnnotationTool = CurrentShapeType;
+                    }
+                }
+
                 DeselectShape();
 
                 OnCurrentShapeTypeChanged(currentShapeType);
@@ -152,9 +164,6 @@ namespace ShareX.ScreenCaptureLib
             }
         }
 
-        public Point CurrentPosition { get; private set; }
-        public Point PositionOnClick { get; private set; }
-
         public ResizeManager ResizeManager { get; private set; }
         public bool IsCreating { get; private set; }
         public bool IsMoving { get; private set; }
@@ -168,13 +177,14 @@ namespace ShareX.ScreenCaptureLib
         }
 
         public bool IsProportionalResizing { get; private set; }
+        public bool IsCornerMoving { get; private set; }
         public bool IsSnapResizing { get; private set; }
 
         public List<SimpleWindowInfo> Windows { get; set; }
         public bool WindowCaptureMode { get; set; }
         public bool IncludeControls { get; set; }
 
-        public SurfaceOptions Config { get; private set; }
+        public RegionCaptureOptions Config { get; private set; }
 
         public AnnotationOptions AnnotationOptions
         {
@@ -187,8 +197,9 @@ namespace ShareX.ScreenCaptureLib
         public event Action<BaseShape> CurrentShapeChanged;
         public event Action<ShapeType> CurrentShapeTypeChanged;
 
-        private RectangleRegionForm form;
+        private const int SnapDistance = 30;
 
+        private RectangleRegionForm form;
         private ContextMenuStrip cmsContextMenu;
         private ToolStripSeparator tssObjectOptions, tssShapeOptions;
         private ToolStripMenuItem tsmiDeleteSelected, tsmiDeleteAll, tsmiBorderColor, tsmiFillColor, tsmiHighlightColor;
@@ -201,6 +212,7 @@ namespace ShareX.ScreenCaptureLib
 
             ResizeManager = new ResizeManager(form, this);
 
+            form.LostFocus += form_LostFocus;
             form.MouseDown += form_MouseDown;
             form.MouseUp += form_MouseUp;
             form.MouseDoubleClick += form_MouseDoubleClick;
@@ -214,7 +226,15 @@ namespace ShareX.ScreenCaptureLib
             }
 
             CurrentShape = null;
-            CurrentShapeType = ShapeType.RegionRectangle;
+
+            if (form.Mode == RectangleRegionMode.Annotation)
+            {
+                CurrentShapeType = Config.LastRegionTool;
+            }
+            else
+            {
+                CurrentShapeType = ShapeType.RegionRectangle;
+            }
         }
 
         private void CreateContextMenu()
@@ -620,7 +640,7 @@ namespace ShareX.ScreenCaptureLib
             tsmiOptions.DropDownItems.Add(tsmiFixedSize);
 
             ToolStripDoubleLabeledNumericUpDown tslnudFixedSize = new ToolStripDoubleLabeledNumericUpDown("Width:", "Height:");
-            tslnudFixedSize.Content.Minimum = 5;
+            tslnudFixedSize.Content.Minimum = 10;
             tslnudFixedSize.Content.Maximum = 10000;
             tslnudFixedSize.Content.Increment = 10;
             tslnudFixedSize.Content.Value = Config.FixedSize.Width;
@@ -777,6 +797,11 @@ namespace ShareX.ScreenCaptureLib
             tsmiHighlightColor.Visible = shapeType == ShapeType.DrawingHighlight;
         }
 
+        private void form_LostFocus(object sender, EventArgs e)
+        {
+            IsProportionalResizing = IsCornerMoving = IsSnapResizing = false;
+        }
+
         private void form_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -804,10 +829,9 @@ namespace ShareX.ScreenCaptureLib
                     DeleteCurrentShape();
                     EndRegionSelection();
                 }
-                else if (form.Mode == RectangleRegionMode.Annotation && cmsContextMenu != null)
+                else if (form.Mode == RectangleRegionMode.Annotation)
                 {
-                    cmsContextMenu.Show(form, e.Location.Add(-10, -10));
-                    Config.ShowMenuTip = false;
+                    RunAction(Config.MouseRightClickAction);
                 }
                 else if (IsShapeIntersect())
                 {
@@ -820,7 +844,15 @@ namespace ShareX.ScreenCaptureLib
             }
             else if (e.Button == MouseButtons.Middle)
             {
-                form.Close(RegionResult.Close);
+                RunAction(Config.MouseMiddleClickAction);
+            }
+            else if (e.Button == MouseButtons.XButton1)
+            {
+                RunAction(Config.Mouse4ClickAction);
+            }
+            else if (e.Button == MouseButtons.XButton2)
+            {
+                RunAction(Config.Mouse5ClickAction);
             }
         }
 
@@ -828,14 +860,13 @@ namespace ShareX.ScreenCaptureLib
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (IsCurrentShapeTypeRegion)
+                if (IsCurrentShapeTypeRegion && ValidRegions.Length > 0)
                 {
+                    form.UpdateRegionPath();
                     form.Close(RegionResult.Region);
                 }
-                else if (CurrentShape != null)
+                else if (CurrentShape != null && !IsCreating)
                 {
-                    EndRegionSelection();
-
                     CurrentShape.OnShapeDoubleClicked();
                 }
             }
@@ -889,6 +920,9 @@ namespace ShareX.ScreenCaptureLib
                         }
                     }
                     break;
+                case Keys.ControlKey:
+                    IsCornerMoving = true;
+                    break;
                 case Keys.ShiftKey:
                     IsProportionalResizing = true;
                     break;
@@ -897,10 +931,13 @@ namespace ShareX.ScreenCaptureLib
                     break;
             }
 
-            if (form.Mode == RectangleRegionMode.Annotation)
+            if (form.Mode == RectangleRegionMode.Annotation && !IsCreating)
             {
                 switch (e.KeyCode)
                 {
+                    case Keys.Tab:
+                        SwapShapeType();
+                        break;
                     case Keys.NumPad0:
                         CurrentShapeType = ShapeType.RegionRectangle;
                         break;
@@ -939,6 +976,9 @@ namespace ShareX.ScreenCaptureLib
         {
             switch (e.KeyCode)
             {
+                case Keys.ControlKey:
+                    IsCornerMoving = false;
+                    break;
                 case Keys.ShiftKey:
                     IsProportionalResizing = false;
                     break;
@@ -952,6 +992,44 @@ namespace ShareX.ScreenCaptureLib
                     {
                         EndRegionSelection();
                     }
+                    break;
+                case Keys.Apps:
+                    OpenOptionsMenu();
+                    break;
+            }
+        }
+
+        private void RunAction(RegionCaptureAction action)
+        {
+            switch (action)
+            {
+                case RegionCaptureAction.CancelCapture:
+                    form.Close(RegionResult.Close);
+                    break;
+                case RegionCaptureAction.RemoveShapeCancelCapture:
+                    if (IsShapeIntersect())
+                    {
+                        DeleteIntersectShape();
+                    }
+                    else
+                    {
+                        form.Close(RegionResult.Close);
+                    }
+                    break;
+                case RegionCaptureAction.RemoveShape:
+                    DeleteIntersectShape();
+                    break;
+                case RegionCaptureAction.OpenOptionsMenu:
+                    OpenOptionsMenu();
+                    break;
+                case RegionCaptureAction.SwapToolType:
+                    SwapShapeType();
+                    break;
+                case RegionCaptureAction.CaptureFullscreen:
+                    form.Close(RegionResult.Fullscreen);
+                    break;
+                case RegionCaptureAction.CaptureActiveMonitor:
+                    form.Close(RegionResult.ActiveMonitor);
                     break;
             }
         }
@@ -968,28 +1046,29 @@ namespace ShareX.ScreenCaptureLib
                 }
                 else if (IsCreating && !CurrentRectangle.IsEmpty)
                 {
-                    CurrentPosition = InputManager.MousePosition0Based;
+                    Point currentPosition = InputManager.MousePosition0Based;
 
-                    Point newPosition = CurrentPosition;
-
-                    if (IsProportionalResizing)
+                    if (IsCornerMoving)
+                    {
+                        shape.StartPosition = shape.StartPosition.Add(InputManager.MouseVelocity.X, InputManager.MouseVelocity.Y);
+                    }
+                    else if (IsProportionalResizing)
                     {
                         if (shape.NodeType == NodeType.Rectangle)
                         {
-                            newPosition = CaptureHelpers.SnapPositionToDegree(PositionOnClick, CurrentPosition, 90, 45);
+                            currentPosition = CaptureHelpers.SnapPositionToDegree(shape.StartPosition, currentPosition, 90, 45);
                         }
                         else if (shape.NodeType == NodeType.Line)
                         {
-                            newPosition = CaptureHelpers.SnapPositionToDegree(PositionOnClick, CurrentPosition, 45, 0);
+                            currentPosition = CaptureHelpers.SnapPositionToDegree(shape.StartPosition, currentPosition, 45, 0);
                         }
                     }
-
-                    if (IsSnapResizing)
+                    else if (IsSnapResizing)
                     {
-                        newPosition = SnapPosition(PositionOnClick, newPosition);
+                        currentPosition = SnapPosition(shape.StartPosition, currentPosition);
                     }
 
-                    shape.EndPosition = newPosition;
+                    shape.EndPosition = currentPosition;
                 }
             }
 
@@ -1004,8 +1083,6 @@ namespace ShareX.ScreenCaptureLib
             {
                 return;
             }
-
-            PositionOnClick = position;
 
             BaseShape shape = GetShapeIntersect();
 
@@ -1034,7 +1111,7 @@ namespace ShareX.ScreenCaptureLib
                 else
                 {
                     IsCreating = true;
-                    shape.StartPosition = position;
+                    shape.StartPosition = shape.EndPosition = position;
                 }
             }
         }
@@ -1050,7 +1127,7 @@ namespace ShareX.ScreenCaptureLib
 
             if (shape != null)
             {
-                if (!IsCurrentRectangleValid)
+                if (!shape.IsValidShape)
                 {
                     shape.Rectangle = Rectangle.Empty;
 
@@ -1063,6 +1140,7 @@ namespace ShareX.ScreenCaptureLib
                     else
                     {
                         DeleteCurrentShape();
+                        shape = null;
                     }
                 }
 
@@ -1173,26 +1251,51 @@ namespace ShareX.ScreenCaptureLib
             }
         }
 
-        private Point SnapPosition(Point posOnClick, Point posCurrent)
+        private void SwapShapeType()
         {
-            Rectangle currentRect = CaptureHelpers.CreateRectangle(posOnClick, posCurrent);
-            Point newPosition = posCurrent;
-
-            foreach (SnapSize size in Config.SnapSizes)
+            if (form.Mode == RectangleRegionMode.Annotation)
             {
-                if (currentRect.Width.IsBetween(size.Width - Config.SnapDistance, size.Width + Config.SnapDistance) ||
-                    currentRect.Height.IsBetween(size.Height - Config.SnapDistance, size.Height + Config.SnapDistance))
+                if (IsCurrentShapeTypeRegion)
                 {
-                    newPosition = CaptureHelpers.CalculateNewPosition(posOnClick, posCurrent, size);
-                    break;
+                    CurrentShapeType = Config.LastAnnotationTool;
+                }
+                else
+                {
+                    CurrentShapeType = Config.LastRegionTool;
                 }
             }
+        }
 
-            Rectangle newRect = CaptureHelpers.CreateRectangle(posOnClick, newPosition);
-
-            if (form.ScreenRectangle0Based.Contains(newRect))
+        private void OpenOptionsMenu()
+        {
+            if (form.Mode == RectangleRegionMode.Annotation && cmsContextMenu != null)
             {
-                return newPosition;
+                cmsContextMenu.Show(form, InputManager.MousePosition0Based.Add(-10, -10));
+                Config.ShowMenuTip = false;
+            }
+        }
+
+        private Point SnapPosition(Point posOnClick, Point posCurrent)
+        {
+            Size currentSize = CaptureHelpers.CreateRectangle(posOnClick, posCurrent).Size;
+            Vector2 vector = new Vector2(currentSize.Width, currentSize.Height);
+
+            SnapSize snapSize = (from size in Config.SnapSizes
+                                 let distance = MathHelpers.Distance(vector, new Vector2(size.Width, size.Height))
+                                 where distance > 0 && distance < SnapDistance
+                                 orderby distance
+                                 select size).FirstOrDefault();
+
+            if (snapSize != null)
+            {
+                Point posNew = CaptureHelpers.CalculateNewPosition(posOnClick, posCurrent, snapSize);
+
+                Rectangle newRect = CaptureHelpers.CreateRectangle(posOnClick, posNew);
+
+                if (form.ScreenRectangle0Based.Contains(newRect))
+                {
+                    return posNew;
+                }
             }
 
             return posCurrent;

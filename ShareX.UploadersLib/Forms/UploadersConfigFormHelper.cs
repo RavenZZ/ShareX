@@ -25,7 +25,6 @@
 
 using ShareX.HelpersLib;
 using ShareX.UploadersLib.FileUploaders;
-using ShareX.UploadersLib.Forms;
 using ShareX.UploadersLib.ImageUploaders;
 using ShareX.UploadersLib.Properties;
 using ShareX.UploadersLib.TextUploaders;
@@ -433,20 +432,6 @@ namespace ShareX.UploadersLib
 
         #region Dropbox
 
-        public void DropboxOpenFiles()
-        {
-            if (OAuth2Info.CheckOAuth(Config.DropboxOAuth2Info))
-            {
-                using (DropboxFilesForm filesForm = new DropboxFilesForm(Config.DropboxOAuth2Info, GetDropboxUploadPath(), Config.DropboxAccountInfo))
-                {
-                    if (filesForm.ShowDialog() == DialogResult.OK)
-                    {
-                        txtDropboxPath.Text = filesForm.CurrentFolderPath;
-                    }
-                }
-            }
-        }
-
         public void DropboxAuthOpen()
         {
             try
@@ -483,12 +468,12 @@ namespace ShareX.UploadersLib
 
                     if (result)
                     {
-                        Config.DropboxAccountInfo = dropbox.GetAccountInfo();
+                        Config.DropboxAccount = dropbox.GetCurrentAccount();
                         UpdateDropboxStatus();
 
                         oauth2Dropbox.Status = OAuthLoginStatus.LoginSuccessful;
 
-                        if (Config.DropboxAccountInfo != null)
+                        if (Config.DropboxAccount != null)
                         {
                             MessageBox.Show(Resources.UploadersConfigForm_Login_successful, "ShareX", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
@@ -507,7 +492,7 @@ namespace ShareX.UploadersLib
                     }
                 }
 
-                Config.DropboxAccountInfo = null;
+                Config.DropboxAccount = null;
                 UpdateDropboxStatus();
             }
             catch (Exception ex)
@@ -524,22 +509,17 @@ namespace ShareX.UploadersLib
                 StringBuilder sb = new StringBuilder();
                 sb.AppendLine(Resources.UploadersConfigForm_UpdateDropboxStatus_Email_ + " " + Config.DropboxAccountInfo.Email);
                 sb.AppendLine(Resources.UploadersConfigForm_UpdateDropboxStatus_Name_ + " " + Config.DropboxAccountInfo.Display_name);
-                sb.AppendLine(Resources.UploadersConfigForm_UpdateDropboxStatus_User_ID_ + " " + Config.DropboxAccountInfo.Uid.ToString());
-                string uploadPath = GetDropboxUploadPath();
+                sb.AppendLine(Resources.UploadersConfigForm_UpdateDropboxStatus_User_ID_ + " " + Config.DropboxAccountInfo.Uid);
+                string uploadPath = NameParser.Parse(NameParserType.URL, Dropbox.VerifyPath(Config.DropboxUploadPath));
                 sb.AppendLine(Resources.UploadersConfigForm_UpdateDropboxStatus_Upload_path_ + " " + uploadPath);
-                sb.AppendLine(Resources.UploadersConfigForm_UpdateDropboxStatus_Download_path_ + " " + Dropbox.GetPublicURL(Config.DropboxAccountInfo.Uid, uploadPath + "Example.png"));
+                sb.AppendLine(Resources.UploadersConfigForm_UpdateDropboxStatus_Download_path_ + " " +
+                    Dropbox.GetPublicURL(Config.DropboxAccountInfo.Uid.ToString(), URLHelpers.CombineURL(uploadPath, "Example.png")));
                 lblDropboxStatus.Text = sb.ToString();
-                btnDropboxShowFiles.Enabled = true;
             }
             else
             {
                 lblDropboxStatus.Text = "";
             }
-        }
-
-        private string GetDropboxUploadPath()
-        {
-            return NameParser.Parse(NameParserType.URL, Dropbox.TidyUploadPath(Config.DropboxUploadPath));
         }
 
         #endregion Dropbox

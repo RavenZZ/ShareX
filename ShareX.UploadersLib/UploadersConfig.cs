@@ -130,10 +130,18 @@ namespace ShareX.UploadersLib
         // Dropbox
 
         public OAuth2Info DropboxOAuth2Info = null;
-        public DropboxAccountInfo DropboxAccountInfo = null;
+        public DropboxAccount DropboxAccount = null;
         public string DropboxUploadPath = "Public/ShareX/%y/%mo";
         public bool DropboxAutoCreateShareableLink = false;
         public DropboxURLType DropboxURLType = DropboxURLType.Default;
+        public DropboxAccountInfo DropboxAccountInfo = null; // API v1
+
+        // FTP Server
+
+        public List<FTPAccount> FTPAccountList = new List<FTPAccount>();
+        public int FTPSelectedImage = 0;
+        public int FTPSelectedText = 0;
+        public int FTPSelectedFile = 0;
 
         // OneDrive
 
@@ -141,19 +149,17 @@ namespace ShareX.UploadersLib
         public OneDriveFileInfo OneDriveSelectedFolder = OneDrive.RootFolder;
         public bool OneDriveAutoCreateShareableLink = true;
 
-        // Copy
-
-        public OAuthInfo CopyOAuthInfo = null;
-        public CopyAccountInfo CopyAccountInfo = null;
-        public string CopyUploadPath = "ShareX/%y/%mo";
-        public CopyURLType CopyURLType = CopyURLType.Shortened;
-
         // Google Drive
 
         public OAuth2Info GoogleDriveOAuth2Info = null;
         public bool GoogleDriveIsPublic = true;
+        public bool GoogleDriveDirectLink = false;
         public bool GoogleDriveUseFolder = false;
         public string GoogleDriveFolderID = "";
+
+        // puush
+
+        public string PuushAPIKey = "";
 
         // SendSpace
 
@@ -181,13 +187,6 @@ namespace ShareX.UploadersLib
         public string LocalhostrEmail = "";
         public string LocalhostrPassword = "";
         public bool LocalhostrDirectURL = true;
-
-        // FTP Server
-
-        public List<FTPAccount> FTPAccountList = new List<FTPAccount>();
-        public int FTPSelectedImage = 0;
-        public int FTPSelectedText = 0;
-        public int FTPSelectedFile = 0;
 
         // Shared Folder
 
